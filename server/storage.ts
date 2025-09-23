@@ -188,7 +188,7 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(products.isActive, isActive));
     }
     
-    return query;
+    return await query;
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -247,7 +247,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    return query;
+    return await query;
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
@@ -345,7 +345,7 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(artworkSubmissions.status, status));
     }
     
-    return query;
+    return await query;
   }
 
   async updateArtworkSubmissionStatus(id: string, status: string, reviewedBy: string, rejectionReason?: string): Promise<ArtworkSubmission> {
@@ -409,7 +409,7 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    return query;
+    return await query;
   }
 
   async getArtistPerformance(): Promise<any[]> {
