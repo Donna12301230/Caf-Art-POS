@@ -52,7 +52,7 @@ export default function ShoppingCart({
 
   const processPaymentMutation = useMutation({
     mutationFn: async () => {
-      const orderData = {
+      const orderData: any = {
         subtotal: subtotal.toFixed(2),
         tax: tax.toFixed(2),
         discount: discount.toFixed(2),

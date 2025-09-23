@@ -34,13 +34,13 @@ export default function POS() {
     queryKey: ['/api/products', { isActive: true }],
   });
 
-  const filteredProducts = products?.filter((product: any) => {
+  const filteredProducts = Array.isArray(products) ? products.filter((product: any) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !activeCategory || 
-                           categories?.find((cat: any) => cat.id === product.categoryId)?.type === activeCategory;
+                           (Array.isArray(categories) && categories.find((cat: any) => cat.id === product.categoryId)?.type === activeCategory);
     return matchesSearch && matchesCategory;
-  }) || [];
+  }) : [];
 
   const categoryTabs = [
     { id: "beverage", label: "Beverages", icon: Coffee },
@@ -49,7 +49,7 @@ export default function POS() {
     { id: "merchandise", label: "Merchandise", icon: Shirt },
   ];
 
-  const addToCart = (product: any, options?: any, specialInstructions?: string) => {
+  const addToCart = (product: any, options: any = {}, specialInstructions: string = '') => {
     const cartItem: CartItem = {
       id: `${product.id}-${Date.now()}`,
       productId: product.id,

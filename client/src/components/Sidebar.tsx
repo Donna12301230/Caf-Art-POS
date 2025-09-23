@@ -36,16 +36,16 @@ export default function Sidebar() {
       <div className="p-4 border-b border-border bg-muted/50">
         <div className="flex items-center space-x-3">
           <img 
-            src={user?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face"} 
+            src={(user && typeof user === 'object' && 'profileImageUrl' in user ? user.profileImageUrl as string : '') || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face"} 
             alt="User Profile" 
             className="w-10 h-10 rounded-full border-2 border-primary/20" 
           />
           <div>
             <p className="font-medium text-sm" data-testid="text-user-name">
-              {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email || 'User'}
+              {(user && typeof user === 'object' && 'firstName' in user && 'lastName' in user && user.firstName && user.lastName) ? `${user.firstName} ${user.lastName}` : (user && typeof user === 'object' && 'email' in user ? user.email : null) || 'User'}
             </p>
             <p className="text-xs text-muted-foreground" data-testid="text-user-role">
-              {user?.role || 'Cashier'}
+              {(user && typeof user === 'object' && 'role' in user ? user.role : null) || 'Cashier'}
             </p>
           </div>
         </div>

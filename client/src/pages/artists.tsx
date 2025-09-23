@@ -153,14 +153,14 @@ export default function Artists() {
         {/* Artists Grid */}
         {activeTab === "artists" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {artists?.length === 0 ? (
+            {Array.isArray(artists) && artists.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <Palette className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No artists found</p>
               </div>
             ) : (
-              artists?.map((artist: any) => {
-                const performance = artistPerformance?.find((perf: any) => perf.artistId === artist.id);
+              Array.isArray(artists) ? artists.map((artist: any) => {
+                const performance = Array.isArray(artistPerformance) ? artistPerformance.find((perf: any) => perf.artistId === artist.id) : null;
                 const totalSales = parseFloat(performance?.totalSales || 0);
                 const commission = parseFloat(performance?.commission || 0);
                 
