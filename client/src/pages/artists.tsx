@@ -159,7 +159,7 @@ export default function Artists() {
                 <p className="text-muted-foreground">No artists found</p>
               </div>
             ) : (
-              Array.isArray(artists) ? artists.map((artist: any) => {
+              Array.isArray(artists) && artists.map((artist: any) => {
                 const performance = Array.isArray(artistPerformance) ? artistPerformance.find((perf: any) => perf.artistId === artist.id) : null;
                 const totalSales = parseFloat(performance?.totalSales || 0);
                 const commission = parseFloat(performance?.commission || 0);
