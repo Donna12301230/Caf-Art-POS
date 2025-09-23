@@ -71,7 +71,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive" data-testid="text-low-stock">
-                {lowStockItems?.length || 0}
+                {Array.isArray(lowStockItems) ? lowStockItems.length : 0}
               </div>
               <p className="text-xs text-muted-foreground">
                 Requires attention

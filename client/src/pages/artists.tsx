@@ -30,13 +30,13 @@ export default function Artists() {
     queryKey: ['/api/analytics/artist-performance'],
   });
 
-  const pendingSubmissions = artworkSubmissions?.filter((submission: any) => 
+  const pendingSubmissions = Array.isArray(artworkSubmissions) ? artworkSubmissions.filter((submission: any) => 
     submission.status === 'pending'
-  ) || [];
+  ) : [];
 
-  const totalArtists = artists?.length || 0;
-  const totalArtworks = artists?.reduce((sum: number, artist: any) => sum + (artist.products?.length || 0), 0) || 148;
-  const monthlyArtSales = artistPerformance?.reduce((sum: number, artist: any) => sum + parseFloat(artist.totalSales || 0), 0) || 0;
+  const totalArtists = Array.isArray(artists) ? artists.length : 0;
+  const totalArtworks = Array.isArray(artists) ? artists.reduce((sum: number, artist: any) => sum + (artist.products?.length || 0), 0) : 148;
+  const monthlyArtSales = Array.isArray(artistPerformance) ? artistPerformance.reduce((sum: number, artist: any) => sum + parseFloat(artist.totalSales || 0), 0) : 0;
 
   const tabs = [
     { id: "artists", label: "Artists" },

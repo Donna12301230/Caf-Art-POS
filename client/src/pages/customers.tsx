@@ -24,19 +24,19 @@ export default function Customers() {
     queryKey: ['/api/customers'],
   });
 
-  const filteredCustomers = customers?.filter((customer: any) =>
+  const filteredCustomers = Array.isArray(customers) ? customers.filter((customer: any) =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.phone?.includes(searchQuery)
-  ) || [];
+  ) : [];
 
-  const totalCustomers = customers?.length || 0;
-  const totalLoyaltyPoints = customers?.reduce((sum: number, customer: any) => 
+  const totalCustomers = Array.isArray(customers) ? customers.length : 0;
+  const totalLoyaltyPoints = Array.isArray(customers) ? customers.reduce((sum: number, customer: any) => 
     sum + (customer.loyaltyPoints || 0), 0
-  ) || 0;
-  const totalSpent = customers?.reduce((sum: number, customer: any) => 
+  ) : 0;
+  const totalSpent = Array.isArray(customers) ? customers.reduce((sum: number, customer: any) => 
     sum + parseFloat(customer.totalSpent || 0), 0
-  ) || 0;
+  ) : 0;
   const averageSpent = totalCustomers > 0 ? totalSpent / totalCustomers : 0;
 
   const getLoyaltyTier = (points: number) => {

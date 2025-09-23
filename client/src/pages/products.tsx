@@ -30,13 +30,13 @@ export default function Products() {
     queryKey: ['/api/categories'],
   });
 
-  const filteredProducts = products?.filter((product: any) => {
+  const filteredProducts = Array.isArray(products) ? products.filter((product: any) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === "all" || 
-                           categories?.find((cat: any) => cat.id === product.categoryId)?.type === activeCategory;
+                           (Array.isArray(categories) && categories.find((cat: any) => cat.id === product.categoryId)?.type === activeCategory);
     return matchesSearch && matchesCategory;
-  }) || [];
+  }) : [];
 
   const categoryTabs = [
     { id: "all", label: "All Products", icon: Package },

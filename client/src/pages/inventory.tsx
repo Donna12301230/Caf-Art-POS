@@ -27,15 +27,15 @@ export default function Inventory() {
     queryKey: ['/api/inventory/low-stock'],
   });
 
-  const filteredItems = inventoryItems?.filter((item: any) =>
+  const filteredItems = Array.isArray(inventoryItems) ? inventoryItems.filter((item: any) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  ) : [];
 
-  const totalItems = inventoryItems?.length || 0;
-  const lowStockCount = lowStockItems?.length || 0;
-  const totalValue = inventoryItems?.reduce((sum: number, item: any) => 
+  const totalItems = Array.isArray(inventoryItems) ? inventoryItems.length : 0;
+  const lowStockCount = Array.isArray(lowStockItems) ? lowStockItems.length : 0;
+  const totalValue = Array.isArray(inventoryItems) ? inventoryItems.reduce((sum: number, item: any) => 
     sum + (parseFloat(item.currentStock) * parseFloat(item.unitCost || 0)), 0
-  ) || 0;
+  ) : 0;
 
   const getStockStatus = (currentStock: number, minLevel: number) => {
     const stockRatio = currentStock / minLevel;

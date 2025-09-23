@@ -49,16 +49,16 @@ export default function Orders() {
     },
   });
 
-  const filteredOrders = orders?.filter((order: any) =>
+  const filteredOrders = Array.isArray(orders) ? orders.filter((order: any) =>
     order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
     order.total.toString().includes(searchQuery)
-  ) || [];
+  ) : [];
 
-  const todaysOrders = orders?.filter((order: any) => {
+  const todaysOrders = Array.isArray(orders) ? orders.filter((order: any) => {
     const orderDate = new Date(order.createdAt);
     const today = new Date();
     return orderDate.toDateString() === today.toDateString();
-  }) || [];
+  }) : [];
 
   const totalRevenue = todaysOrders.reduce((sum: number, order: any) => 
     sum + parseFloat(order.total), 0
@@ -66,9 +66,9 @@ export default function Orders() {
 
   const averageOrder = todaysOrders.length > 0 ? totalRevenue / todaysOrders.length : 0;
 
-  const pendingOrders = orders?.filter((order: any) => 
+  const pendingOrders = Array.isArray(orders) ? orders.filter((order: any) => 
     order.orderStatus === 'pending' || order.orderStatus === 'preparing'
-  ) || [];
+  ) : [];
 
   const getStatusColor = (status: string) => {
     switch (status) {

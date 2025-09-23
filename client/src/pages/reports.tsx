@@ -188,10 +188,10 @@ export default function Reports() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {topProducts?.length === 0 ? (
+                {Array.isArray(topProducts) && topProducts.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No product data available</p>
                 ) : (
-                  topProducts?.map((product: any, index: number) => (
+                  Array.isArray(topProducts) ? topProducts.map((product: any, index: number) => (
                     <div key={product.productId} className="flex items-center justify-between" data-testid={`product-${index}`}>
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -207,7 +207,7 @@ export default function Reports() {
                         <p className="text-sm text-green-600">+{Math.floor(Math.random() * 20 + 5)}%</p>
                       </div>
                     </div>
-                  )) || [
+                  )) : [
                     // Default display when no data
                     <div key="default" className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
