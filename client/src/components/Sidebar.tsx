@@ -59,23 +59,23 @@ export default function Sidebar() {
             const Icon = item.icon;
             
             return (
-              <Link key={item.path} href={item.path}>
-                <a 
-                  className={`sidebar-item flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
-                    isActive 
-                      ? 'active bg-primary/15 text-primary border-l-3 border-primary' 
-                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                  }`}
-                  data-testid={item.testId}
-                >
-                  <Icon className="w-5 h-5 mr-3" />
-                  {item.label}
-                  {item.path === "/orders" && (
-                    <span className="ml-auto bg-accent text-accent-foreground text-xs rounded-full px-2 py-0.5 cart-badge">
-                      3
-                    </span>
-                  )}
-                </a>
+              <Link 
+                key={item.path} 
+                href={item.path}
+                className={`sidebar-item flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                  isActive 
+                    ? 'active bg-primary/15 text-primary border-l-3 border-primary' 
+                    : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                }`}
+                data-testid={item.testId}
+              >
+                <Icon className="w-5 h-5 mr-3" />
+                {item.label}
+                {item.path === "/orders" && (
+                  <span className="ml-auto bg-accent text-accent-foreground text-xs rounded-full px-2 py-0.5 cart-badge">
+                    3
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -83,11 +83,12 @@ export default function Sidebar() {
 
         {/* Settings Section */}
         <div className="mt-6 pt-6 border-t border-border px-3">
-          <Link href="/settings">
-            <a className="sidebar-item flex items-center px-3 py-2.5 text-sm font-medium rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
-              <Settings className="w-5 h-5 mr-3" />
-              Settings
-            </a>
+          <Link 
+            href="/settings"
+            className="sidebar-item flex items-center px-3 py-2.5 text-sm font-medium rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+          >
+            <Settings className="w-5 h-5 mr-3" />
+            Settings
           </Link>
           <button 
             onClick={() => window.location.href = '/api/logout'}
