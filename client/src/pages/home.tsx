@@ -30,7 +30,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-daily-revenue">
-                ${dailyRevenue?.revenue?.toFixed(2) || '0.00'}
+                ${parseFloat(dailyRevenue?.revenue || 0).toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">
                 +12.5% from yesterday
