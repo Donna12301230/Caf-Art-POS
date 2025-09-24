@@ -1,7 +1,9 @@
 import Layout from "@/components/Layout";
+import ProductCard from "@/components/ProductCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   Palette, 
   TrendingUp, 
@@ -10,24 +12,46 @@ import {
   UserPlus, 
   Plus,
   Mail,
-  Star
+  Star,
+  Search,
+  Shirt
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryWithToast } from "@/hooks/useQueryWithToast";
 import { useState } from "react";
 
 export default function Artists() {
   const [activeTab, setActiveTab] = useState("artists");
+  const [artworkCategory, setArtworkCategory] = useState("artwork");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: artists, isLoading } = useQuery({
+  const { data: artists, isLoading } = useQueryWithToast({
     queryKey: ['/api/artists', { status: 'approved' }],
+    errorTitle: "Artists Error",
+    errorDescription: "Failed to load artists data",
   });
 
-  const { data: artworkSubmissions } = useQuery({
+  const { data: artworkSubmissions } = useQueryWithToast({
     queryKey: ['/api/artwork-submissions'],
+    errorTitle: "Submissions Error", 
+    errorDescription: "Failed to load artwork submissions",
   });
 
-  const { data: artistPerformance } = useQuery({
+  const { data: artistPerformance } = useQueryWithToast({
     queryKey: ['/api/analytics/artist-performance'],
+    errorTitle: "Performance Error",
+    errorDescription: "Failed to load artist performance data",
+  });
+
+  const { data: categories } = useQueryWithToast({
+    queryKey: ['/api/categories'],
+    errorTitle: "Categories Error",
+    errorDescription: "Failed to load categories",
+  });
+
+  const { data: products } = useQueryWithToast({
+    queryKey: ['/api/products', { isActive: true }],
+    errorTitle: "Products Error",
+    errorDescription: "Failed to load products",
   });
 
   const pendingSubmissions = Array.isArray(artworkSubmissions) ? artworkSubmissions.filter((submission: any) => 
@@ -35,7 +59,19 @@ export default function Artists() {
   ) : [];
 
   const totalArtists = Array.isArray(artists) ? artists.length : 0;
-  const totalArtworks = Array.isArray(artists) ? artists.reduce((sum: number, artist: any) => sum + (artist.products?.length || 0), 0) : 148;
+  // Filter artwork and merchandise products
+  const artworkProducts = Array.isArray(products) ? products.filter((product: any) => {
+    const productCategory = Array.isArray(categories) ? categories.find((cat: any) => cat.id === product.categoryId) : null;
+    const matchesArtworkCategory = productCategory?.type === artworkCategory;
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         product.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesArtworkCategory && matchesSearch;
+  }) : [];
+
+  const totalArtworks = Array.isArray(products) ? products.filter((product: any) => {
+    const productCategory = Array.isArray(categories) ? categories.find((cat: any) => cat.id === product.categoryId) : null;
+    return productCategory?.type === 'artwork' || productCategory?.type === 'merchandise';
+  }).length : 0;
   const monthlyArtSales = Array.isArray(artistPerformance) ? artistPerformance.reduce((sum: number, artist: any) => sum + parseFloat(artist.totalSales || 0), 0) : 0;
 
   const tabs = [
@@ -255,9 +291,79 @@ export default function Artists() {
 
         {/* Artworks Content */}
         {activeTab === "artworks" && (
-          <div className="text-center py-12">
-            <Palette className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Artwork management interface would be implemented here</p>
+          <div>
+            {/* Artwork Controls */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    type="text"
+                    placeholder="Search artworks..."
+                    className="pl-10 w-64"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    data-testid="input-search-artworks"
+                  />
+                </div>
+
+                {/* Category Toggle */}
+                <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+                  <button
+                    onClick={() => setArtworkCategory("artwork")}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                      artworkCategory === "artwork"
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-background'
+                    }`}
+                    data-testid="tab-artwork"
+                  >
+                    <Palette className="w-4 h-4 mr-2 inline" />
+                    Artwork
+                  </button>
+                  <button
+                    onClick={() => setArtworkCategory("merchandise")}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                      artworkCategory === "merchandise"
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-background'
+                    }`}
+                    data-testid="tab-merchandise"
+                  >
+                    <Shirt className="w-4 h-4 mr-2 inline" />
+                    Merchandise
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Artwork Products Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {artworkProducts.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  {artworkCategory === "artwork" ? (
+                    <Palette className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  ) : (
+                    <Shirt className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  )}
+                  <p className="text-muted-foreground">
+                    No {artworkCategory === "artwork" ? "artworks" : "merchandise"} found
+                  </p>
+                </div>
+              ) : (
+                artworkProducts.map((product: any) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onClick={() => {
+                      // Handle artwork/merchandise selection - could open details modal
+                      console.log(`Selected ${artworkCategory}:`, product.name);
+                    }}
+                  />
+                ))
+              )}
+            </div>
           </div>
         )}
 

@@ -49,8 +49,6 @@ export default function POS() {
   const categoryTabs = [
     { id: "beverage", label: "Beverages", icon: Coffee },
     { id: "food", label: "Food", icon: Cookie },
-    { id: "artwork", label: "Artwork", icon: Palette },
-    { id: "merchandise", label: "Merchandise", icon: Shirt },
   ];
 
   const addToCart = (product: any, options: any = {}, specialInstructions: string = '') => {
