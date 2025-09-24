@@ -3,8 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Coffee, Palette, ShoppingCart, TrendingUp, AlertTriangle, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
+interface DailyRevenue {
+  revenue: string;
+  date: string;
+}
+
 export default function Home() {
-  const { data: dailyRevenue } = useQuery({
+  const { data: dailyRevenue } = useQuery<DailyRevenue>({
     queryKey: ['/api/analytics/daily-revenue'],
   });
 
@@ -30,7 +35,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-daily-revenue">
-                ${parseFloat(dailyRevenue?.revenue || 0).toFixed(2)}
+                ${parseFloat(dailyRevenue?.revenue || '0').toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">
                 +12.5% from yesterday
