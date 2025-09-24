@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Coffee, Cookie, Palette, Shirt } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryWithToast } from "@/hooks/useQueryWithToast";
 import { useState } from "react";
 
 interface CartItem {
@@ -26,12 +26,16 @@ export default function POS() {
   const [showCustomization, setShowCustomization] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
-  const { data: categories } = useQuery({
+  const { data: categories } = useQueryWithToast({
     queryKey: ['/api/categories'],
+    errorTitle: "Categories Error",
+    errorDescription: "Failed to load product categories",
   });
 
-  const { data: products } = useQuery({
+  const { data: products } = useQueryWithToast({
     queryKey: ['/api/products', { isActive: true }],
+    errorTitle: "Products Error", 
+    errorDescription: "Failed to load products",
   });
 
   const filteredProducts = Array.isArray(products) ? products.filter((product: any) => {

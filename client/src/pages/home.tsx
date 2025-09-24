@@ -1,7 +1,7 @@
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Coffee, Palette, ShoppingCart, TrendingUp, AlertTriangle, Users } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryWithToast } from "@/hooks/useQueryWithToast";
 
 interface DailyRevenue {
   revenue: string;
@@ -9,12 +9,16 @@ interface DailyRevenue {
 }
 
 export default function Home() {
-  const { data: dailyRevenue } = useQuery<DailyRevenue>({
+  const { data: dailyRevenue, isLoading: revenueLoading } = useQueryWithToast<DailyRevenue>({
     queryKey: ['/api/analytics/daily-revenue'],
+    errorTitle: "Revenue Error",
+    errorDescription: "Failed to load daily revenue data",
   });
 
-  const { data: lowStockItems } = useQuery({
+  const { data: lowStockItems, isLoading: stockLoading } = useQueryWithToast({
     queryKey: ['/api/inventory/low-stock'],
+    errorTitle: "Inventory Error", 
+    errorDescription: "Failed to load low stock items",
   });
 
   return (
