@@ -178,17 +178,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProducts(categoryId?: string, isActive?: boolean): Promise<Product[]> {
-    let query = db.select().from(products);
-    
     if (categoryId && isActive !== undefined) {
-      query = query.where(and(eq(products.categoryId, categoryId), eq(products.isActive, isActive)));
+      return db.select().from(products).where(and(eq(products.categoryId, categoryId), eq(products.isActive, isActive)));
     } else if (categoryId) {
-      query = query.where(eq(products.categoryId, categoryId));
+      return db.select().from(products).where(eq(products.categoryId, categoryId));
     } else if (isActive !== undefined) {
-      query = query.where(eq(products.isActive, isActive));
+      return db.select().from(products).where(eq(products.isActive, isActive));
     }
     
-    return await query;
+    return db.select().from(products);
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -229,8 +227,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrders(filters?: { startDate?: Date; endDate?: Date; status?: string }): Promise<Order[]> {
-    let query = db.select().from(orders).orderBy(desc(orders.createdAt));
-
     if (filters) {
       const conditions = [];
       if (filters.startDate) {
@@ -243,11 +239,11 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(orders.orderStatus, filters.status));
       }
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        return db.select().from(orders).where(and(...conditions)).orderBy(desc(orders.createdAt));
       }
     }
 
-    return await query;
+    return db.select().from(orders).orderBy(desc(orders.createdAt));
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
@@ -339,13 +335,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getArtworkSubmissions(status?: string): Promise<ArtworkSubmission[]> {
-    let query = db.select().from(artworkSubmissions).orderBy(desc(artworkSubmissions.submittedAt));
-    
     if (status) {
-      query = query.where(eq(artworkSubmissions.status, status));
+      return db.select().from(artworkSubmissions).where(eq(artworkSubmissions.status, status)).orderBy(desc(artworkSubmissions.submittedAt));
     }
     
-    return await query;
+    return db.select().from(artworkSubmissions).orderBy(desc(artworkSubmissions.submittedAt));
   }
 
   async updateArtworkSubmissionStatus(id: string, status: string, reviewedBy: string, rejectionReason?: string): Promise<ArtworkSubmission> {
@@ -384,7 +378,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTopSellingProducts(limit: number, startDate?: Date, endDate?: Date): Promise<any[]> {
-    let query = db
+    const baseQuery = db
       .select({
         productId: orderItems.productId,
         productName: products.name,
@@ -394,13 +388,12 @@ export class DatabaseStorage implements IStorage {
       .from(orderItems)
       .innerJoin(orders, eq(orderItems.orderId, orders.id))
       .innerJoin(products, eq(orderItems.productId, products.id))
-      .where(eq(orders.paymentStatus, "completed"))
       .groupBy(orderItems.productId, products.name)
       .orderBy(sql`SUM(${orderItems.quantity}) DESC`)
       .limit(limit);
 
     if (startDate && endDate) {
-      query = query.where(
+      return baseQuery.where(
         and(
           eq(orders.paymentStatus, "completed"),
           gte(orders.createdAt, startDate),
@@ -409,7 +402,7 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    return await query;
+    return baseQuery.where(eq(orders.paymentStatus, "completed"));
   }
 
   async getArtistPerformance(): Promise<any[]> {
