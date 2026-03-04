@@ -53,14 +53,21 @@ export default function POS() {
   const filteredProducts = Array.isArray(products) ? products.filter((product: any) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const catId = product.categoryId?.id ?? product.categoryId?.objectId;
     const matchesCategory = !activeCategory ||
-                           (Array.isArray(categories) && categories.find((cat: any) => cat.id === product.categoryId?.objectId)?.type === activeCategory);
+                           (Array.isArray(categories) && categories.find((cat: any) => cat.id === catId)?.type === activeCategory);
     return matchesSearch && matchesCategory;
   }) : [];
 
+  const countByType = (type: string) =>
+    Array.isArray(products) ? products.filter((p: any) => {
+      const catId = p.categoryId?.id ?? p.categoryId?.objectId;
+      return Array.isArray(categories) && categories.find((c: any) => c.id === catId)?.type === type;
+    }).length : 0;
+
   const categoryTabs = [
-    { id: "beverage", label: "飲品", icon: Coffee },
-    { id: "food", label: "食物", icon: Cookie },
+    { id: "beverage", label: "飲品", icon: Coffee,  count: countByType("beverage") },
+    { id: "food",     label: "食物", icon: Cookie,  count: countByType("food") },
   ];
 
   const addToCart = (product: any, options: any = {}, specialInstructions: string = '') => {
@@ -131,15 +138,20 @@ export default function POS() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveCategory(tab.id)}
-                  className={`flex-1 py-1 md:py-2 px-2 md:px-4 rounded-md text-xs md:text-sm font-medium transition-colors ${
+                  className={`flex-1 py-1 md:py-2 px-2 md:px-4 rounded-md text-xs md:text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
                     activeCategory === tab.id
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-background'
                   }`}
                   data-testid={`tab-${tab.id}`}
                 >
-                  <Icon className="w-3 h-3 md:w-4 md:h-4 mr-1 inline" />
+                  <Icon className="w-3 h-3 md:w-4 md:h-4" />
                   {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`text-[10px] rounded-full px-1.5 ${activeCategory === tab.id ? 'bg-white/20' : 'bg-muted-foreground/20'}`}>
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
