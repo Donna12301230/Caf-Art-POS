@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build"
-  functions = "dist/functions"
+  # Only build the frontend with Vite (Parse Server handles the backend)
+  command = "vite build"
   publish = "dist/public"
 
 [[redirects]]
@@ -12,6 +12,9 @@
   for = "/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
 
 [[headers]]
   for = "/assets/*"
