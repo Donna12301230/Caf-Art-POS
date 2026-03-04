@@ -1,239 +1,176 @@
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coffee, Palette, ShoppingCart, TrendingUp, AlertTriangle, Users } from "lucide-react";
-import { useQueryWithToast } from "@/hooks/useQueryWithToast";
+import { Coffee, Palette, ShoppingCart, TrendingUp, AlertTriangle, Users, Receipt, Package } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import Parse from "@/lib/parseClient";
 
-interface DailyRevenue {
-  revenue: string;
-  date: string;
-}
+const toPlain = (obj: Parse.Object) => ({ id: obj.id, ...obj.attributes });
 
 export default function Home() {
-  const { data: dailyRevenue, isLoading: revenueLoading } = useQueryWithToast<DailyRevenue>({
-    queryKey: ['/api/analytics/daily-revenue'],
-    errorTitle: "Revenue Error",
-    errorDescription: "Failed to load daily revenue data",
+  const { data: todaysOrders } = useQuery({
+    queryKey: ["parseTodaysOrders"],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const q = new Parse.Query("Order");
+      q.greaterThanOrEqualTo("createdAt", today);
+      const results = await q.find();
+      return results.map(toPlain);
+    },
   });
 
-  const { data: lowStockItems, isLoading: stockLoading } = useQueryWithToast({
-    queryKey: ['/api/inventory/low-stock'],
-    errorTitle: "Inventory Error", 
-    errorDescription: "Failed to load low stock items",
+  const { data: lowStockItems } = useQuery({
+    queryKey: ["parseLowStockItems"],
+    queryFn: async () => {
+      const q = new Parse.Query("InventoryItem");
+      const results = await q.find();
+      const items = results.map(toPlain);
+      return items.filter((item: any) =>
+        parseFloat(item.currentStock) <= parseFloat(item.minStockLevel)
+      );
+    },
   });
+
+  const { data: artists } = useQuery({
+    queryKey: ["parseArtistsCount"],
+    queryFn: async () => {
+      const q = new Parse.Query("Artist");
+      q.equalTo("status", "approved");
+      return q.count();
+    },
+  });
+
+  const dailyRevenue = Array.isArray(todaysOrders)
+    ? todaysOrders.reduce((sum: number, order: any) => sum + parseFloat(order.total || 0), 0)
+    : 0;
+  const ordersToday = Array.isArray(todaysOrders) ? todaysOrders.length : 0;
+  const lowStockCount = Array.isArray(lowStockItems) ? lowStockItems.length : 0;
+
+  const stats = [
+    { label: '今日營收', value: `$${dailyRevenue.toFixed(0)}`, sub: '+12.5%', icon: TrendingUp, color: 'text-green-600', testId: 'text-daily-revenue' },
+    { label: '今日訂單', value: ordersToday, sub: '+8%', icon: ShoppingCart, color: 'text-blue-600', testId: 'text-daily-orders' },
+    { label: '合作藝術家', value: artists ?? 0, sub: '本月+2', icon: Palette, color: 'text-purple-600', testId: 'text-active-artists' },
+    { label: '低庫存', value: lowStockCount, sub: '需關注', icon: AlertTriangle, color: lowStockCount > 0 ? 'text-destructive' : 'text-green-600', testId: 'text-low-stock' },
+  ];
+
+  const quickActions = [
+    { href: '/pos', icon: Coffee, label: '點餐', color: 'coffee-gradient text-white' },
+    { href: '/orders', icon: Receipt, label: '訂單', color: 'bg-accent/10 text-accent' },
+    { href: '/products', icon: Package, label: '產品', color: 'bg-primary/10 text-primary' },
+    { href: '/artists', icon: Palette, label: '藝術家', color: 'bg-secondary/50 text-secondary-foreground' },
+    { href: '/inventory', icon: Package, label: '庫存', color: 'bg-orange-100 text-orange-600' },
+    { href: '/customers', icon: Users, label: '客戶', color: 'bg-pink-100 text-pink-600' },
+  ];
 
   return (
     <Layout>
-      <div className="p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening at your café today.</p>
+      <div className="p-2 md:p-6">
+        {/* Header — compact on mobile */}
+        <div className="mb-3 md:mb-8">
+          <h1 className="text-lg md:text-3xl font-bold text-foreground">主頁</h1>
+          <p className="text-xs md:text-base text-muted-foreground">今日咖啡店狀況</p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-daily-revenue">
-                ${parseFloat(dailyRevenue?.revenue || '0').toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                +12.5% from yesterday
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Orders Today</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-daily-orders">47</div>
-              <p className="text-xs text-muted-foreground">
-                +8% from yesterday
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Artists</CardTitle>
-              <Palette className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-active-artists">12</div>
-              <p className="text-xs text-muted-foreground">
-                +2 new this month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive" data-testid="text-low-stock">
-                {Array.isArray(lowStockItems) ? lowStockItems.length : 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Requires attention
-              </p>
-            </CardContent>
-          </Card>
+        {/* Stats — 2x2 compact grid on mobile, 4-col on desktop */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6 mb-3 md:mb-8">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.label} className="overflow-hidden">
+                {/* Mobile: ultra-compact */}
+                <div className="flex items-center p-2 md:hidden">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-muted mr-2 flex-shrink-0`}>
+                    <Icon className={`w-4 h-4 ${stat.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground leading-tight truncate">{stat.label}</p>
+                    <p className={`text-lg font-bold leading-tight ${stat.color}`} data-testid={stat.testId}>
+                      {stat.value}
+                    </p>
+                  </div>
+                </div>
+                {/* Desktop: normal */}
+                <CardHeader className="hidden md:flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                </CardHeader>
+                <CardContent className="hidden md:block">
+                  <div className="text-2xl font-bold" data-testid={stat.testId}>{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">{stat.sub}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => window.location.href = '/pos'}>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 coffee-gradient rounded-lg flex items-center justify-center">
-                  <Coffee className="w-6 h-6 text-white" />
+        {/* Quick Actions — 3x2 icon grid on mobile */}
+        <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-3 md:mb-8">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link key={action.href} href={action.href}>
+                <div className="flex flex-col items-center justify-center p-2 md:p-4 rounded-xl border border-border bg-card hover:shadow-md transition-all cursor-pointer active:scale-95">
+                  <div className={`w-9 h-9 md:w-12 md:h-12 rounded-xl flex items-center justify-center mb-1 md:mb-2 ${action.color}`}>
+                    <Icon className="w-4 h-4 md:w-6 md:h-6" />
+                  </div>
+                  <span className="text-[11px] md:text-sm font-medium text-foreground text-center">{action.label}</span>
                 </div>
-                <div>
-                  <CardTitle className="text-lg">Point of Sale</CardTitle>
-                  <p className="text-sm text-muted-foreground">Process orders and payments</p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => window.location.href = '/orders'}>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">Order Management</CardTitle>
-                  <p className="text-sm text-muted-foreground">View and manage orders</p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => window.location.href = '/artists'}>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-secondary/50 rounded-lg flex items-center justify-center">
-                  <Palette className="w-6 h-6 text-secondary-foreground" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg">Artist Management</CardTitle>
-                  <p className="text-sm text-muted-foreground">Manage artists and artwork</p>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent orders + artists — stacked on mobile, side by side on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 md:gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ShoppingCart className="w-5 h-5" />
-                <span>Recent Orders</span>
+            <CardHeader className="py-2 px-3 md:py-4 md:px-6">
+              <CardTitle className="text-sm md:text-base flex items-center space-x-2">
+                <ShoppingCart className="w-4 h-4" />
+                <span>最近訂單</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium">#1847</p>
-                    <p className="text-sm text-muted-foreground">Signature Latte, Cappuccino x2</p>
+            <CardContent className="p-0">
+              {Array.isArray(todaysOrders) && todaysOrders.length > 0 ? (
+                todaysOrders.slice(0, 5).map((order: any) => (
+                  <div key={order.id} className="flex items-center justify-between px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30">
+                    <div>
+                      <p className="text-xs font-medium">#{order.orderNumber}</p>
+                      <p className="text-[10px] text-muted-foreground">{order.orderType || '內用'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold">${parseFloat(order.total || 0).toFixed(2)}</p>
+                      <p className="text-[10px] text-green-600">{order.orderStatus}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">$16.76</p>
-                    <p className="text-sm text-green-600">Completed</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium">#1846</p>
-                    <p className="text-sm text-muted-foreground">Cold Brew, Croissant</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">$8.75</p>
-                    <p className="text-sm text-amber-600">Preparing</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium">#1845</p>
-                    <p className="text-sm text-muted-foreground">Matcha Latte, Art Print</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">$28.25</p>
-                    <p className="text-sm text-green-600">Completed</p>
-                  </div>
-                </div>
-              </div>
+                ))
+              ) : (
+                <p className="text-center text-xs text-muted-foreground py-4">今日無訂單</p>
+              )}
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="w-5 h-5" />
-                <span>Top Artists This Month</span>
+            <CardHeader className="py-2 px-3 md:py-4 md:px-6">
+              <CardTitle className="text-sm md:text-base flex items-center space-x-2">
+                <Users className="w-4 h-4" />
+                <span>本月最佳藝術家</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-                  <img 
-                    src="https://images.unsplash.com/photo-1494790108755-2616b612b882?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face" 
-                    alt="Maya Chen" 
-                    className="w-10 h-10 rounded-full" 
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">Maya Chen</p>
-                    <p className="text-sm text-muted-foreground">23 artworks sold</p>
+            <CardContent className="p-0">
+              {[
+                { name: 'Maya Chen', sold: 23, revenue: 1247, img: 'https://images.unsplash.com/photo-1494790108755-2616b612b882?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face' },
+                { name: 'Luna Kim', sold: 31, revenue: 1408, img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face' },
+              ].map((artist) => (
+                <div key={artist.name} className="flex items-center px-3 py-2 border-b border-border last:border-0 hover:bg-muted/30">
+                  <img src={artist.img} alt={artist.name} className="w-8 h-8 rounded-full mr-2 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{artist.name}</p>
+                    <p className="text-[10px] text-muted-foreground">已售 {artist.sold} 件</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-green-600">$1,247</p>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
-                  </div>
+                  <p className="text-xs font-semibold text-green-600">${artist.revenue.toLocaleString()}</p>
                 </div>
-                <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-                  <img 
-                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face" 
-                    alt="Luna Kim" 
-                    className="w-10 h-10 rounded-full" 
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">Luna Kim</p>
-                    <p className="text-sm text-muted-foreground">31 artworks sold</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-green-600">$1,408</p>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-                  <img 
-                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face" 
-                    alt="David Rodriguez" 
-                    className="w-10 h-10 rounded-full" 
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium">David Rodriguez</p>
-                    <p className="text-sm text-muted-foreground">18 artworks sold</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-green-600">$892</p>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
-                  </div>
-                </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>

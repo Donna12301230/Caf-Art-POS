@@ -26,21 +26,21 @@ export default function ProductCustomizationModal({
   const [specialInstructions, setSpecialInstructions] = useState('');
 
   const sizes = [
-    { id: 'small', label: 'Small', price: 0 },
-    { id: 'medium', label: 'Medium', price: 0 },
-    { id: 'large', label: 'Large', price: 0.5 },
+    { id: 'small', label: '小杯', price: 0 },
+    { id: 'medium', label: '中杯', price: 0 },
+    { id: 'large', label: '大杯', price: 0.5 },
   ];
 
   const temperatures = [
-    { id: 'iced', label: 'Iced' },
-    { id: 'hot', label: 'Hot' },
+    { id: 'iced', label: '冰的' },
+    { id: 'hot', label: '熱的' },
   ];
 
   const availableAddOns = [
-    { id: 'extra-shot', label: 'Extra Shot', price: 0.75 },
-    { id: 'decaf', label: 'Decaf', price: 0 },
-    { id: 'oat-milk', label: 'Oat Milk', price: 0.60 },
-    { id: 'extra-hot', label: 'Extra Hot', price: 0 },
+    { id: 'extra-shot', label: '加射濃縮', price: 0.75 },
+    { id: 'decaf', label: '低咖啡因', price: 0 },
+    { id: 'oat-milk', label: '燕麥奶', price: 0.60 },
+    { id: 'extra-hot', label: '特熱', price: 0 },
   ];
 
   const handleAddOnChange = (addOnId: string, checked: boolean) => {
@@ -74,20 +74,20 @@ export default function ProductCustomizationModal({
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="w-96 max-w-lg" data-testid="modal-customization">
         <DialogHeader>
-          <DialogTitle>Customize Order</DialogTitle>
+          <DialogTitle>客製化訂單</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
             <h4 className="font-medium mb-2">{product.name}</h4>
             <p className="text-sm text-muted-foreground mb-4">
-              Base price: ${parseFloat(product.price).toFixed(2)}
+              基礎價格: ${parseFloat(product.price).toFixed(2)}
             </p>
           </div>
 
           {/* Size Selection */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Size</Label>
+            <Label className="text-sm font-medium mb-2 block">容量</Label>
             <div className="grid grid-cols-3 gap-2">
               {sizes.map((size) => (
                 <button
@@ -109,7 +109,7 @@ export default function ProductCustomizationModal({
 
           {/* Temperature */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Temperature</Label>
+            <Label className="text-sm font-medium mb-2 block">溫度</Label>
             <div className="grid grid-cols-2 gap-2">
               {temperatures.map((temp) => (
                 <button
@@ -130,7 +130,7 @@ export default function ProductCustomizationModal({
 
           {/* Add-ons */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Add-ons</Label>
+            <Label className="text-sm font-medium mb-2 block">額外選項</Label>
             <div className="space-y-2">
               {availableAddOns.map((addOn) => (
                 <div key={addOn.id} className="flex items-center space-x-2">
@@ -152,12 +152,12 @@ export default function ProductCustomizationModal({
           {/* Special Instructions */}
           <div>
             <Label htmlFor="instructions" className="text-sm font-medium mb-2 block">
-              Special Instructions
+              特殊說明
             </Label>
             <Textarea
               id="instructions"
               rows={3}
-              placeholder="Any special requests..."
+              placeholder="任何特殊要求..."
               value={specialInstructions}
               onChange={(e) => setSpecialInstructions(e.target.value)}
               data-testid="textarea-instructions"
@@ -167,7 +167,7 @@ export default function ProductCustomizationModal({
           {/* Total Price */}
           <div className="border-t pt-3">
             <div className="flex justify-between items-center">
-              <span className="font-medium">Total Price:</span>
+              <span className="font-medium">總價格：</span>
               <span className="text-lg font-bold text-primary" data-testid="text-total-price">
                 ${calculateTotalPrice().toFixed(2)}
               </span>
@@ -181,14 +181,14 @@ export default function ProductCustomizationModal({
             onClick={handleConfirm}
             data-testid="button-confirm-customization"
           >
-            Add to Cart
+            加入購物車
           </Button>
           <Button 
             variant="outline" 
             onClick={onCancel}
             data-testid="button-cancel-customization"
           >
-            Cancel
+            取消
           </Button>
         </div>
       </DialogContent>

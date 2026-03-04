@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx tsc:*)",
+      "Bash(rm:*)",
+      "Bash(python:*)",
+      "Bash(NODE_ENV=development timeout 12 npx tsx:*)",
+      "Bash(netstat:*)",
+      "Bash(cmd:*)",
+      "Bash(powershell:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx tsx:*)"
+    ]
+  }
+}

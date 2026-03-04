@@ -2,39 +2,68 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  DollarSign, 
-  Coffee, 
-  Palette, 
-  Handshake, 
+import {
+  DollarSign,
+  Coffee,
+  Palette,
+  Handshake,
   TrendingUp,
   Download,
   Users
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import Parse from "@/lib/parseClient";
+
+const toPlain = (obj: Parse.Object) => ({ id: obj.id, ...obj.attributes });
 
 export default function Reports() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
 
-  const { data: dailyRevenue } = useQuery({
-    queryKey: ['/api/analytics/daily-revenue'],
+  const { data: orders } = useQuery({
+    queryKey: ["parseReportsOrders", selectedPeriod],
+    queryFn: async () => {
+      const now = new Date();
+      let startDate = new Date();
+      if (selectedPeriod === "week") startDate.setDate(now.getDate() - 7);
+      else if (selectedPeriod === "month") startDate.setMonth(now.getMonth() - 1);
+      else if (selectedPeriod === "quarter") startDate.setMonth(now.getMonth() - 3);
+      else if (selectedPeriod === "year") startDate.setFullYear(now.getFullYear() - 1);
+      startDate.setHours(0, 0, 0, 0);
+
+      const q = new Parse.Query("Order");
+      q.greaterThanOrEqualTo("createdAt", startDate);
+      q.limit(1000);
+      const results = await q.find();
+      return results.map(toPlain);
+    },
   });
 
-  const { data: topProducts } = useQuery({
-    queryKey: ['/api/analytics/top-products', { limit: 5 }],
+  const { data: orderItems } = useQuery({
+    queryKey: ["parseReportsOrderItems"],
+    queryFn: async () => {
+      const q = new Parse.Query("OrderItem");
+      q.limit(1000);
+      const results = await q.find();
+      return results.map(toPlain);
+    },
   });
 
-  const { data: artistPerformance } = useQuery({
-    queryKey: ['/api/analytics/artist-performance'],
+  const { data: artists } = useQuery({
+    queryKey: ["parseReportsArtists"],
+    queryFn: async () => {
+      const q = new Parse.Query("Artist");
+      const results = await q.find();
+      return results.map(toPlain);
+    },
   });
 
-  const totalRevenue = 24589;
-  const beverageRevenue = 18420;
-  const artRevenue = 6169;
-  const commissions = 1851;
+  // Client-side analytics
+  const totalRevenue = Array.isArray(orders)
+    ? orders.reduce((sum: number, o: any) => sum + parseFloat(o.total || 0), 0)
+    : 0;
 
-  // Mock data for chart visualization (in real app, use a chart library like recharts)
+  // Mock chart data for visualization
   const chartData = [
     { day: 'Mon', revenue: 2800 },
     { day: 'Tue', revenue: 3200 },
@@ -44,17 +73,42 @@ export default function Reports() {
     { day: 'Sat', revenue: 3600 },
     { day: 'Sun', revenue: 5200 },
   ];
-
   const maxRevenue = Math.max(...chartData.map(d => d.revenue));
+
+  // Top products from order items
+  const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
+  if (Array.isArray(orderItems)) {
+    orderItems.forEach((item: any) => {
+      const productId = item.productId?.objectId || item.productId;
+      if (!productSales[productId]) {
+        productSales[productId] = { name: item.productName || productId, qty: 0, revenue: 0 };
+      }
+      productSales[productId].qty += item.quantity || 0;
+      productSales[productId].revenue += parseFloat(item.totalPrice || 0);
+    });
+  }
+  const topProducts = Object.entries(productSales)
+    .map(([id, v]) => ({ productId: id, productName: v.name, totalQuantity: v.qty, totalRevenue: v.revenue }))
+    .sort((a, b) => b.totalRevenue - a.totalRevenue)
+    .slice(0, 5);
+
+  // Artist performance
+  const artistPerformance = Array.isArray(artists) ? artists.map((artist: any) => ({
+    artistId: artist.id,
+    artistName: artist.name,
+    totalSales: parseFloat(artist.totalSales || 0),
+    commission: parseFloat(artist.totalSales || 0) * parseFloat(artist.commissionRate || 30) / 100,
+    totalOrders: 0,
+  })) : [];
 
   return (
     <Layout>
-      <div className="p-6">
+      <div className="p-2 md:p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Reports & Analytics</h2>
-            <p className="text-muted-foreground">Track performance and business insights</p>
+            <h2 className="text-2xl font-bold text-foreground">報表與分析</h2>
+            <p className="text-muted-foreground">追蹤績效和業務洞察</p>
           </div>
           <div className="flex items-center space-x-4">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -62,34 +116,34 @@ export default function Reports() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="quarter">This Quarter</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
+                <SelectItem value="week">本週</SelectItem>
+                <SelectItem value="month">本月</SelectItem>
+                <SelectItem value="quarter">本季</SelectItem>
+                <SelectItem value="year">今年</SelectItem>
               </SelectContent>
             </Select>
             <Button data-testid="button-export-report">
               <Download className="w-4 h-4 mr-2" />
-              Export Report
+              匯出報表
             </Button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">總營收</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground" data-testid="text-total-revenue">
-                ${totalRevenue.toLocaleString()}
+                ${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="mt-4">
                 <div className="flex items-center text-sm">
                   <span className="text-green-600">+12.5%</span>
-                  <span className="text-muted-foreground ml-2">vs last month</span>
+                  <span className="text-muted-foreground ml-2">與上期比較</span>
                 </div>
               </div>
             </CardContent>
@@ -97,17 +151,17 @@ export default function Reports() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Beverage Sales</CardTitle>
+              <CardTitle className="text-sm font-medium">飲品銷售</CardTitle>
               <Coffee className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground" data-testid="text-beverage-sales">
-                ${beverageRevenue.toLocaleString()}
+                -
               </div>
               <div className="mt-4">
                 <div className="flex items-center text-sm">
                   <span className="text-green-600">+8.2%</span>
-                  <span className="text-muted-foreground ml-2">vs last month</span>
+                  <span className="text-muted-foreground ml-2">與上月比較</span>
                 </div>
               </div>
             </CardContent>
@@ -115,17 +169,17 @@ export default function Reports() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Art Sales</CardTitle>
+              <CardTitle className="text-sm font-medium">藝術品銷售</CardTitle>
               <Palette className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground" data-testid="text-art-sales">
-                ${artRevenue.toLocaleString()}
+                -
               </div>
               <div className="mt-4">
                 <div className="flex items-center text-sm">
                   <span className="text-green-600">+24.8%</span>
-                  <span className="text-muted-foreground ml-2">vs last month</span>
+                  <span className="text-muted-foreground ml-2">與上月比較</span>
                 </div>
               </div>
             </CardContent>
@@ -133,17 +187,17 @@ export default function Reports() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Artist Commissions</CardTitle>
+              <CardTitle className="text-sm font-medium">藝術家佣金</CardTitle>
               <Handshake className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-foreground" data-testid="text-commissions">
-                ${commissions.toLocaleString()}
+                ${artistPerformance.reduce((s, a) => s + a.commission, 0).toFixed(0)}
               </div>
               <div className="mt-4">
                 <div className="flex items-center text-sm">
                   <span className="text-green-600">+18.9%</span>
-                  <span className="text-muted-foreground ml-2">vs last month</span>
+                  <span className="text-muted-foreground ml-2">與上月比較</span>
                 </div>
               </div>
             </CardContent>
@@ -157,17 +211,17 @@ export default function Reports() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <TrendingUp className="w-5 h-5" />
-                <span>Revenue Trends</span>
+                <span>營收趨勢</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64 flex items-end justify-between space-x-2" data-testid="chart-revenue-trends">
-                {chartData.map((data, index) => {
+                {chartData.map((data) => {
                   const height = (data.revenue / maxRevenue) * 200;
                   return (
                     <div key={data.day} className="flex-1 flex flex-col items-center">
                       <div className="w-full bg-primary/20 rounded-t flex items-end" style={{ height: '200px' }}>
-                        <div 
+                        <div
                           className="w-full bg-primary rounded-t transition-all duration-500"
                           style={{ height: `${height}px` }}
                           title={`${data.day}: $${data.revenue}`}
@@ -184,14 +238,14 @@ export default function Reports() {
           {/* Top Products */}
           <Card>
             <CardHeader>
-              <CardTitle>Top Selling Products</CardTitle>
+              <CardTitle>熱銷產品</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Array.isArray(topProducts) && topProducts.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No product data available</p>
+                {topProducts.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">無可用的產品數據</p>
                 ) : (
-                  Array.isArray(topProducts) ? topProducts.map((product: any, index: number) => (
+                  topProducts.map((product, index) => (
                     <div key={product.productId} className="flex items-center justify-between" data-testid={`product-${index}`}>
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -199,32 +253,14 @@ export default function Reports() {
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{product.productName}</p>
-                          <p className="text-sm text-muted-foreground">{product.totalQuantity} sold</p>
+                          <p className="text-sm text-muted-foreground">{product.totalQuantity} 件已売</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-foreground">${parseFloat(product.totalRevenue || 0).toFixed(0)}</p>
-                        <p className="text-sm text-green-600">+{Math.floor(Math.random() * 20 + 5)}%</p>
+                        <p className="font-semibold text-foreground">${product.totalRevenue.toFixed(0)}</p>
                       </div>
                     </div>
-                  )) : [
-                    // Default display when no data
-                    <div key="default" className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Coffee className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">No product data</p>
-                          <p className="text-sm text-muted-foreground">0 sold</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-foreground">$0</p>
-                        <p className="text-sm text-muted-foreground">-</p>
-                      </div>
-                    </div>
-                  ]
+                  ))
                 )}
               </div>
             </CardContent>
@@ -236,7 +272,7 @@ export default function Reports() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Users className="w-5 h-5" />
-              <span>Artist Performance</span>
+              <span>藝術家表現</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -244,54 +280,41 @@ export default function Reports() {
               <table className="w-full">
                 <thead className="bg-muted">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Artist</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Artworks</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Sales</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Revenue</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Commission</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">Growth</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">藝術家</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">銷售</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">營收</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-muted-foreground">佣金</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {artistPerformance?.length === 0 ? (
+                  {artistPerformance.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                        No artist performance data available
+                      <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                        無可用的藝術家表現數據
                       </td>
                     </tr>
                   ) : (
-                    artistPerformance?.map((artist: any) => (
+                    artistPerformance.map((artist) => (
                       <tr key={artist.artistId} className="hover:bg-muted/50" data-testid={`row-artist-${artist.artistId}`}>
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-3">
-                            <img 
-                              src="https://images.unsplash.com/photo-1494790108755-2616b612b882?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face" 
+                            <img
+                              src="https://images.unsplash.com/photo-1494790108755-2616b612b882?ixlib=rb-4.0.3&w=40&h=40&fit=crop&crop=face"
                               alt={artist.artistName}
-                              className="w-10 h-10 rounded-full" 
+                              className="w-10 h-10 rounded-full"
                             />
                             <span className="font-medium text-foreground">{artist.artistName}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-foreground">-</td>
-                        <td className="px-6 py-4 text-sm text-foreground">{artist.totalOrders || 0}</td>
+                        <td className="px-6 py-4 text-sm text-foreground">{artist.totalOrders}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-foreground">
-                          ${parseFloat(artist.totalSales || 0).toFixed(2)}
+                          ${artist.totalSales.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 text-sm font-semibold text-green-600">
-                          ${parseFloat(artist.commission || 0).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-green-600">
-                          +{Math.floor(Math.random() * 30 + 5)}%
+                          ${artist.commission.toFixed(2)}
                         </td>
                       </tr>
-                    )) || [
-                      // Default display when no data
-                      <tr key="no-data">
-                        <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                          No artist performance data available
-                        </td>
-                      </tr>
-                    ]
+                    ))
                   )}
                 </tbody>
               </table>

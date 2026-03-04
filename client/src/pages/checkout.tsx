@@ -11,10 +11,9 @@ import Layout from "@/components/Layout";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
+  : null;
 
 const CheckoutForm = () => {
   const stripe = useStripe();
@@ -42,14 +41,14 @@ const CheckoutForm = () => {
 
     if (error) {
       toast({
-        title: "Payment Failed",
+        title: "付款失敗",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Payment Successful",
-        description: "Thank you for your purchase!",
+        title: "付款成功",
+        description: "感謝您的購買！",
       });
     }
   };
@@ -59,7 +58,7 @@ const CheckoutForm = () => {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <CreditCard className="w-5 h-5" />
-          <span>Complete Payment</span>
+          <span>完成付款</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -74,7 +73,7 @@ const CheckoutForm = () => {
             disabled={!stripe || isProcessing}
             data-testid="button-submit-payment"
           >
-            {isProcessing ? 'Processing...' : 'Complete Payment'}
+            {isProcessing ? '處理中...' : '完成付款'}
           </Button>
         </form>
         
@@ -85,7 +84,7 @@ const CheckoutForm = () => {
             data-testid="button-back"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to POS
+            返回 POS
           </Button>
         </div>
       </CardContent>
@@ -122,7 +121,7 @@ export default function Checkout() {
         <div className="p-6 min-h-screen flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto" aria-label="Loading"/>
-            <p className="text-muted-foreground">Preparing checkout...</p>
+            <p className="text-muted-foreground">準備結帳.....</p>
           </div>
         </div>
       </Layout>
@@ -135,28 +134,28 @@ export default function Checkout() {
       <div className="p-6 min-h-screen">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Checkout</h1>
-          <p className="text-muted-foreground">Complete your order payment</p>
+          <h1 className="text-2xl font-bold text-foreground">結帳</h1>
+          <p className="text-muted-foreground">完成您的訂單付款</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
           <Card>
             <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+              <CardTitle>訂單摘要</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Signature Latte</span>
+                  <span className="text-muted-foreground">特色拿鐵</span>
                   <span>$4.50</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Classic Cappuccino x2</span>
+                  <span className="text-muted-foreground">經典卡布奇諾 x2</span>
                   <span>$8.50</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Cold Brew</span>
+                  <span className="text-muted-foreground">冷萃咖啡</span>
                   <span>$4.25</span>
                 </div>
               </div>
@@ -165,20 +164,20 @@ export default function Checkout() {
               
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal:</span>
+                  <span className="text-muted-foreground">小計:</span>
                   <span>$17.25</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Discount:</span>
+                  <span className="text-muted-foreground">折扣:</span>
                   <span className="text-green-600">-$1.73</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tax:</span>
+                  <span className="text-muted-foreground">稅金:</span>
                   <span>$1.24</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-semibold">
-                  <span>Total:</span>
+                  <span>合計:</span>
                   <span className="text-primary" data-testid="text-order-total">
                     ${orderTotal.toFixed(2)}
                   </span>
