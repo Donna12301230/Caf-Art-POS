@@ -16,7 +16,16 @@
       "Bash(sed:*)",
       "Bash(taskkill:*)",
       "Bash(npx tsx:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "WebSearch",
+      "WebFetch(domain:website.ncyu.edu.tw)",
+      "WebFetch(domain:zh.wikipedia.org)",
+      "WebFetch(domain:www.ncyu.edu.tw)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }
