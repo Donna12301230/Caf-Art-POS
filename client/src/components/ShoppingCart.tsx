@@ -58,7 +58,7 @@ export default function ShoppingCart({
       const q = new Parse.Query("Customer");
       q.startsWith("name", customerSearch);
       q.limit(5);
-      return (await q.find()).map(c => ({ id: c.id, name: c.get("name") as string, phone: c.get("phone") as string }));
+      return (await q.find()).map(c => ({ id: c.id as string, name: c.get("name") as string, phone: c.get("phone") as string }));
     },
     enabled: showCustomerPicker && customerSearch.length > 0,
   });
